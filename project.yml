@@ -1,0 +1,61 @@
+name: WhoopSync
+options:
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+configFiles:
+  Debug: Config/Base.xcconfig
+  Release: Config/Base.xcconfig
+packages:
+  SyncCore:
+    path: Packages/SyncCore
+targets:
+  WhoopSync:
+    type: application
+    platform: iOS
+    sources: [App/WhoopSync]
+    dependencies:
+      - package: SyncCore
+    entitlements:
+      path: App/WhoopSync/WhoopSync.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        # Own group first (where items without an explicit group land), then the group shared with
+        # Health Dashboard (docs/SHARING.md). Free teams can't sign App Groups; keychain groups work.
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)
+          - $(AppIdentifierPrefix)com.richarddraycott.healthshare
+    info:
+      path: App/WhoopSync/Info.plist
+      properties:
+        CFBundleDisplayName: Strap Sync
+        # Each TestFlight upload needs a new build number: scripts/testflight.sh sets CURRENT_PROJECT_VERSION.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # No encryption beyond what iOS provides, so App Store Connect doesn't ask about export compliance on every build.
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIRequiresFullScreen: true
+        # Wakes the app for the strap's Bluetooth traffic and lets iOS restore the link.
+        UIBackgroundModes: [bluetooth-central, fetch]
+        # A fallback wake to flush the outbox into Apple Health.
+        BGTaskSchedulerPermittedIdentifiers: [$(PRODUCT_BUNDLE_IDENTIFIER).flush]
+        NSBluetoothAlwaysUsageDescription: Strap Sync connects to your WHOOP strap over Bluetooth to read its heart rate.
+        NSHealthUpdateUsageDescription: Strap Sync writes your strap's heart rate and heart rate variability to Apple Health.
+        # Lets the Files app see the logs, and devicectl copy them off the phone.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        SharedKeychainGroup: $(AppIdentifierPrefix)com.richarddraycott.healthshare
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
+        # iPhone only: as a universal app, App Store Connect rejects portrait-only for breaking iPad multitasking.
+        TARGETED_DEVICE_FAMILY: "1"

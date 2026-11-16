@@ -1,0 +1,26 @@
+# The Simulator's end-to-end check of zoneRedo1 against Apple Health: this repo's app, plus a UI test that launches
+# it with -zoneCheck YES, allows Health access and waits for the result. Run scripts/zone-check.sh.
+name: ZoneCheck
+include:
+  - path: ../../project.yml
+    relativePaths: true
+targets:
+  ZoneCheckUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [ZoneCheckUITests.swift]
+    dependencies:
+      - target: WhoopSync
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).zonecheck
+        TEST_TARGET_NAME: WhoopSync
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  ZoneCheck:
+    build:
+      targets:
+        WhoopSync: all
+        ZoneCheckUITests: [test]
+    test:
+      targets: [ZoneCheckUITests]
